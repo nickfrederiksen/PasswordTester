@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace PasswordTester
 {
-    public static class Client
+	public static class Client
 	{
 		private static readonly HttpClient httpClient = new HttpClient();
 
@@ -17,10 +17,10 @@ namespace PasswordTester
 			var subStr = hash.Substring(0, 5);
 
 			var url = $"https://api.pwnedpasswords.com/range/{subStr}";
-			var response = await httpClient.GetAsync(url).ConfigureAwait(false);
-
-			return await ParseResponse(response, hash, subStr).ConfigureAwait(false);
-
+			using (var response = await httpClient.GetAsync(url).ConfigureAwait(false))
+			{
+				return await ParseResponse(response, hash, subStr).ConfigureAwait(false);
+			}
 		}
 
 		private static async Task<(bool hasHit, int hitCount)> ParseResponse(HttpResponseMessage response, string hash, string subStr)
