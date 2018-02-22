@@ -9,9 +9,9 @@ namespace PasswordTester
 {
     public static class Client
 	{
-		public static readonly HttpClient httpClient = new HttpClient();
+		private static readonly HttpClient httpClient = new HttpClient();
 
-		private static async Task<(bool hasHit, int hitCount)> TestPassword(string password)
+		public static async Task<(bool hasHit, int hitCount)> TestPassword(string password)
 		{
 			var hash = HashPassword(password);
 			var subStr = hash.Substring(0, 5);
