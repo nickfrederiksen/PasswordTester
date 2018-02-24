@@ -1,31 +1,36 @@
 ﻿using System;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
+[assembly: InternalsVisibleTo("PasswordTester.Test")]
 namespace PasswordTester
 {
-	public static class Client
+	public static class PasswordLookup
 	{
+		private const string ServiceURL = "https://api.pwnedpasswords.com/range/";
 		private static readonly HttpClient httpClient = new HttpClient();
 
-		public static async Task<(bool hasHit, int hitCount)> TestPassword(string password)
+		public static async Task<PasswordLookupResult> Lookup(string password)
 		{
 			var hash = HashPassword(password);
 			var subStr = hash.Substring(0, 5);
 
-			var url = $"https://api.pwnedpasswords.com/range/{subStr}";
+			var url = $"{ServiceURL}{subStr}";
 			using (var response = await httpClient.GetAsync(url).ConfigureAwait(false))
 			{
+				response.EnsureSuccessStatusCode();
+
 				return await ParseResponse(response, hash, subStr).ConfigureAwait(false);
 			}
 		}
 
-		private static async Task<(bool hasHit, int hitCount)> ParseResponse(HttpResponseMessage response, string hash, string subStr)
+		internal static async Task<PasswordLookupResult> ParseResponse(HttpResponseMessage response, string hash, string subStr)
 		{
-			var hitCount = -1;
+			var hitCount = 0;
 			var hasHit = false;
 
 			if (response.IsSuccessStatusCode)
@@ -40,13 +45,15 @@ namespace PasswordTester
 				}
 			}
 
-
-			return (hasHit, hitCount);
+			return new PasswordLookupResult()
+			{
+				HitCount = hitCount
+			};
 		}
 
-		private static int ParseHitCount(string hitLine)
+		internal static int ParseHitCount(string hitLine)
 		{
-			var hitCount = -1;
+			var hitCount = 0;
 			var lineParts = hitLine.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
 			var hitCountPart = lineParts.ElementAtOrDefault(1);
 			if (hitCountPart != null && int.TryParse(hitCountPart, out var parsedHitCount))
@@ -57,7 +64,7 @@ namespace PasswordTester
 			return hitCount;
 		}
 
-		private static string HashPassword(string password)
+		internal static string HashPassword(string password)
 		{
 			using (SHA1Managed sha1 = new SHA1Managed())
 			{
@@ -71,7 +78,6 @@ namespace PasswordTester
 
 				return sb.ToString();
 			}
-
 		}
 	}
 }
