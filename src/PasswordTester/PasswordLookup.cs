@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -9,11 +11,19 @@ using System.Threading.Tasks;
 [assembly: InternalsVisibleTo("PasswordTester.Test")]
 namespace PasswordTester
 {
+	/// <summary>
+	/// Helper class to look up passwords in a public directory.
+	/// </summary>
 	public static class PasswordLookup
 	{
 		private const string ServiceURL = "https://api.pwnedpasswords.com/range/";
-		private static readonly HttpClient httpClient = new HttpClient();
-
+		private static readonly HttpClient httpClient = HttpClientManager.GetHttpClient();
+		
+		/// <summary>
+		/// Looks up the password in a public directory.
+		/// </summary>
+		/// <param name="password">The password to look up.</param>
+		/// <returns>The lookup result</returns>
 		public static async Task<PasswordLookupResult> Lookup(string password)
 		{
 			var hash = HashPassword(password);
