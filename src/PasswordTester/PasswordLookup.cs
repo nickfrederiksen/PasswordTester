@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
@@ -18,7 +19,7 @@ namespace PasswordTester
 	{
 		private const string ServiceURL = "https://api.pwnedpasswords.com/range/";
 		private static readonly HttpClient httpClient = HttpClientManager.GetHttpClient();
-		
+
 		/// <summary>
 		/// Looks up the password in a public directory.
 		/// </summary>
@@ -45,8 +46,7 @@ namespace PasswordTester
 
 			if (response.IsSuccessStatusCode)
 			{
-				var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-				var lines = content.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+				IEnumerable<string> lines = await ParseLinesAsync(response).ConfigureAwait(false);
 				var firstHit = lines.FirstOrDefault(line => $"{subStr}{line}".StartsWith(hash));
 				hasHit = firstHit != null;
 				if (hasHit == true)
@@ -59,6 +59,13 @@ namespace PasswordTester
 			{
 				HitCount = hitCount
 			};
+		}
+
+		internal static async Task<IEnumerable<string>> ParseLinesAsync(HttpResponseMessage response)
+		{
+			var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+			var lines = content.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).Where(l => !l.EndsWith(":0"));
+			return lines;
 		}
 
 		internal static int ParseHitCount(string hitLine)
