@@ -25,7 +25,7 @@ namespace PasswordTester
 		/// </summary>
 		/// <param name="password">The password to look up.</param>
 		/// <returns>The lookup result</returns>
-		public static async Task<PasswordLookupResult> Lookup(string password)
+		public static async Task<PasswordLookupResult> LookupAsync(string password)
 		{
 			var hash = HashPassword(password);
 			var subStr = hash.Substring(0, 5);
@@ -35,11 +35,22 @@ namespace PasswordTester
 			{
 				response.EnsureSuccessStatusCode();
 
-				return await ParseResponse(response, hash, subStr).ConfigureAwait(false);
+				return await ParseResponseAsync(response, hash, subStr).ConfigureAwait(false);
 			}
 		}
 
-		internal static async Task<PasswordLookupResult> ParseResponse(HttpResponseMessage response, string hash, string subStr)
+		/// <summary>
+		/// Looks up the password in a public directory.
+		/// </summary>
+		/// <param name="password">The password to look up.</param>
+		/// <returns>The lookup result</returns>
+		[Obsolete("Use LookupAsync instead.")]
+		public static Task<PasswordLookupResult> Lookup(string password)
+		{
+			return LookupAsync(password);
+		}
+
+		internal static async Task<PasswordLookupResult> ParseResponseAsync(HttpResponseMessage response, string hash, string subStr)
 		{
 			var hitCount = 0;
 			var hasHit = false;

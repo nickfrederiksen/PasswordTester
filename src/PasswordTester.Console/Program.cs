@@ -1,19 +1,16 @@
-﻿using System;
+﻿using System.Threading.Tasks;
 
 namespace PasswordTester.Console
 {
-    class Program
+	class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {	
 			while (true)
 			{
 				System.Console.Write("Enter password to test: ");
 				var password = System.Console.ReadLine();
-				var resultTask = PasswordLookup.Lookup(password);
-				resultTask.ConfigureAwait(false);
-				resultTask.Wait();
-				var result = resultTask.Result;
+				var result = await PasswordLookup.LookupAsync(password);
 
 				if (result)
 				{
