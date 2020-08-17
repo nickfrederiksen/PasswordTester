@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
@@ -18,13 +19,13 @@ namespace PasswordTester
 	{
 		private const string ServiceURL = "https://api.pwnedpasswords.com/range/";
 		private static readonly HttpClient httpClient = HttpClientManager.GetHttpClient();
-		
+
 		/// <summary>
 		/// Looks up the password in a public directory.
 		/// </summary>
 		/// <param name="password">The password to look up.</param>
 		/// <returns>The lookup result</returns>
-		public static async Task<PasswordLookupResult> Lookup(string password)
+		public static async Task<PasswordLookupResult> LookupAsync(string password)
 		{
 			var hash = HashPassword(password);
 			var subStr = hash.Substring(0, 5);
@@ -34,19 +35,29 @@ namespace PasswordTester
 			{
 				response.EnsureSuccessStatusCode();
 
-				return await ParseResponse(response, hash, subStr).ConfigureAwait(false);
+				return await ParseResponseAsync(response, hash, subStr).ConfigureAwait(false);
 			}
 		}
 
-		internal static async Task<PasswordLookupResult> ParseResponse(HttpResponseMessage response, string hash, string subStr)
+		/// <summary>
+		/// Looks up the password in a public directory.
+		/// </summary>
+		/// <param name="password">The password to look up.</param>
+		/// <returns>The lookup result</returns>
+		[Obsolete("Use LookupAsync instead.")]
+		public static Task<PasswordLookupResult> Lookup(string password)
+		{
+			return LookupAsync(password);
+		}
+
+		internal static async Task<PasswordLookupResult> ParseResponseAsync(HttpResponseMessage response, string hash, string subStr)
 		{
 			var hitCount = 0;
 			var hasHit = false;
 
 			if (response.IsSuccessStatusCode)
 			{
-				var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-				var lines = content.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+				IEnumerable<string> lines = await ParseLinesAsync(response).ConfigureAwait(false);
 				var firstHit = lines.FirstOrDefault(line => $"{subStr}{line}".StartsWith(hash));
 				hasHit = firstHit != null;
 				if (hasHit == true)
@@ -59,6 +70,13 @@ namespace PasswordTester
 			{
 				HitCount = hitCount
 			};
+		}
+
+		internal static async Task<IEnumerable<string>> ParseLinesAsync(HttpResponseMessage response)
+		{
+			var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+			var lines = content.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).Where(l => !l.EndsWith(":0"));
+			return lines;
 		}
 
 		internal static int ParseHitCount(string hitLine)

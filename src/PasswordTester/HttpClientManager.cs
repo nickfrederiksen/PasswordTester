@@ -16,6 +16,7 @@ namespace PasswordTester
 
 			string userAgentString = $"PasswordTester-API-Wrapper (v{version})";
 			httpClient.DefaultRequestHeaders.Add("User-Agent", userAgentString);
+			httpClient.DefaultRequestHeaders.Add("Add-Padding", "true");
 
 			return httpClient;
 		}
